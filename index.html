@@ -1,0 +1,62 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Prasadam — Welcome</title>
+  <link rel="stylesheet" href="onboard.css">
+</head>
+<body>
+  <div class="center">
+    <div class="card" id="mainCard">
+      <h1 class="title">Welcome</h1>
+      <p class="muted">Are you a Leader or a Server?</p>
+
+      <div id="roleChoose" class="role-row">
+        <button id="btnLeader" class="btn">Leader</button>
+        <button id="btnServer" class="btn btn-ghost">Server</button>
+      </div>
+
+      <div id="authArea" style="margin-top:16px;display:none">
+        <div class="muted">Sign in with</div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button id="googleBtn" class="btn">Google</button>
+          <button id="emailToggleBtn" class="btn-ghost">Email</button>
+        </div>
+
+        <div id="emailForm" style="margin-top:12px;display:none">
+          <input id="emailInput" class="input" placeholder="Email" type="email">
+          <input id="passInput" class="input" placeholder="Password" type="password">
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <button id="emailSignUpBtn" class="btn">Sign up</button>
+            <button id="emailSignInBtn" class="btn-ghost">Sign in</button>
+          </div>
+        </div>
+
+        <div style="margin-top:12px" id="signedInInfo" hidden>
+          <div class="muted">Signed in as <span id="signedName"></span></div>
+          <div style="margin-top:8px;">
+            <input id="displayNameInput" class="input" placeholder="Display name (what others see)">
+            <div style="display:flex;gap:8px;margin-top:8px;">
+              <button id="saveProfileBtn" class="btn">Save & Continue</button>
+              <button id="signOutBtn" class="btn-ghost">Sign out</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="status" class="muted" style="margin-top:12px"></div>
+      </div>
+
+      <div id="alreadySigned" style="margin-top:8px" class="muted small-note"></div>
+    </div>
+  </div>
+
+  <!-- Firebase SDKs (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+  <script src="firebase-config.js"></script>
+  <script src="onboard.js"></script>
+</body>
+</html>

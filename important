@@ -1,0 +1,12 @@
+const firebaseConfig = {
+  apiKey: "AIzaSyA-MxIzgGcWfkyVhU6weQ90FdQBYKAwMDM",
+  authDomain: "prasadam-counter.firebaseapp.com",
+  databaseURL: "https://prasadam-counter-default-rtdb.asia-southeast1.firebasedatabase.app/", // ✅ important for Realtime DB
+  projectId: "prasadam-counter",
+  storageBucket: "prasadam-counter.appspot.com", // ✅ corrected (.appspot.com not .firebasestorage.app)
+  messagingSenderId: "770901647160",
+  appId: "1:770901647160:web:1ae3097119caa3fb3cabcd",
+  measurementId: "G-M4RMCXENR0"
+};
+
+project-770901647160

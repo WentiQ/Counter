@@ -1,0 +1,58 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <title>Leader Dashboard — Live Prasadam Count</title>
+  <link rel="stylesheet" href="common.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <div class="title">Leader Dashboard</div>
+        <div class="small muted">Live counts from connected servers</div>
+      </div>
+      <div id="authAreaLeader">
+        <button id="leaderSignInBtn" class="btn-ghost">Sign in with Google</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="small muted">Your leader id</div>
+      <div id="leaderId" style="font-weight:700;margin-top:6px">—</div>
+      <div class="small muted" style="margin-top:6px">Set a connection password — share with servers you trust</div>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <input id="leaderPasswordInput" class="input" placeholder="Set/change connection password (leave blank to clear)">
+        <button id="setPasswordBtn" class="btn">Save password</button>
+      </div>
+      <div class="small-note" style="margin-top:8px">When set, servers must enter this password to connect. Password is stored as a hash.</div>
+    </div>
+
+    <div class="card">
+      <div class="small muted">Total served (connected)</div>
+      <div id="globalTotal" class="count-big">0</div>
+    </div>
+
+    <div class="card">
+      <div class="small muted">Connected Servers</div>
+      <div id="serversList" style="margin-top:8px"></div>
+    </div>
+
+    <div class="card">
+      <div class="small muted">Live feed</div>
+      <div id="feed" class="feed"></div>
+    </div>
+
+    <div class="footer">Use this page on the leader device to monitor and manage servers.</div>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+  <script src="firebase-config.js"></script>
+  <script src="leader.js"></script>
+</body>
+</html>
