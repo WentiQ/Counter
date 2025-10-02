@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Temple Prasad Counter</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Ensure the 'Inter' font is used for aesthetics -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="font-[Inter]">
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-white bg-opacity-80 z-50 flex justify-center items-center" style="display: none;">
+        <div class="text-xl font-bold text-gray-700">Loading...</div>
+    </div>
+
+    <header class="bg-[var(--primary-color)] text-white p-4 flex justify-between items-center shadow-lg">
+        <h1 class="text-2xl font-bold">Prasad Seva Count</h1>
+        <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300" style="display: none;">Logout</button>
+    </header>
+    
+    <!-- Global Error Display -->
+    <p id="auth-error" class="error-msg text-red-500 mt-4 text-center"></p>
+
+    <main class="p-4">
+        <!-- Full Screen Counter Mode -->
+        <div id="full-screen-counter-view" class="fixed inset-0 z-[100] bg-white" style="display: none;">
+            <button id="back-to-dashboard-btn" class="fixed top-4 right-4 bg-black bg-opacity-50 text-white px-4 py-2 rounded-lg z-[101] hover:bg-opacity-70 transition-all">
+                Back to Dashboard
+            </button>
+            <div class="counter-grid h-full">
+                <div id="count-one-btn" class="tap-region bg-green-500 hover:bg-green-600 active:bg-green-700 transition-colors">
+                    <span class="text-6xl font-bold mb-4">+1</span>
+                    <div class="tap-label text-xl opacity-75">Tap anywhere in this region to add 1</div>
+                </div>
+                <div id="count-two-btn" class="tap-region bg-yellow-500 hover:bg-yellow-600 active:bg-yellow-700 transition-colors">
+                    <span class="text-6xl font-bold mb-4">+2</span>
+                    <div class="tap-label text-xl opacity-75">Tap anywhere in this region to add 2</div>
+                </div>
+                <div id="count-five-btn" class="tap-region bg-blue-500 hover:bg-blue-600 active:bg-blue-700 transition-colors">
+                    <span class="text-6xl font-bold mb-4">+5</span>
+                    <div class="tap-label text-xl opacity-75">Tap anywhere in this region to add 5</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- === 1. SIGN IN / SIGN UP WITH GOOGLE VIEW === -->
+        <div id="auth-view" class="max-w-md mx-auto my-10 p-6 bg-white rounded-xl shadow-2xl transition duration-500">
+            <h2 class="text-3xl font-bold mb-6 text-[var(--primary-color)]">Welcome to Prasad Seva</h2>
+            <p class="text-gray-600 mb-8">Please sign in with Google to continue.</p>
+            
+            <button id="google-login-btn" class="w-full p-3 flex items-center justify-center bg-gray-100 text-gray-800 font-semibold border border-gray-300 rounded-lg hover:bg-gray-200 transition duration-300 shadow-md">
+                <svg class="w-5 h-5 mr-2" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><path fill="#FFC107" d="M43.61 20.46c-.1-.71-.24-1.38-.4-2.04H24v3.83h10.94c-.45 2.14-1.83 3.99-4.08 5.21v3.01h3.87c2.27-2.09 3.6-5.18 3.6-8.81z"/><path fill="#FF3D00" d="M24 43.61c5.11 0 9.42-1.69 12.56-4.57l-3.87-3.01c-2.45 1.63-5.59 2.59-8.69 2.59-6.66 0-12.3-4.48-14.34-10.51H6.18v3.16c3.27 6.47 9.87 11.02 17.82 11.02z"/><path fill="#4CAF50" d="M9.66 28.52c-.47-1.4-.73-2.9-.73-4.52s.26-3.12.73-4.52V16.32H6.18c-.89 1.76-1.39 3.73-1.39 5.86s.5 4.1 1.39 5.86z"/><path fill="#1976D2" d="M24 13.91c3.55 0 6.64 1.22 9.09 3.48l3.44-3.37c-3.1-2.92-7.23-4.83-12.53-4.83-7.95 0-14.55 4.55-17.82 11.02l3.48 2.76c2.04-6.03 7.68-10.51 14.34-10.51z"/></svg>
+                Sign In / Sign Up with Google
+            </button>
+        </div>
+
+        <!-- === 2. SIGN UP ROLE SELECTION VIEW (FOR NEW GOOGLE USERS) === -->
+        <div id="signup-options-view" class="max-w-md mx-auto my-10 p-6 bg-white rounded-xl shadow-2xl transition duration-500" style="display: none;">
+            <h2 class="text-3xl font-bold mb-6 text-[var(--primary-color)]">Finish Registration</h2>
+            <p class="text-gray-600 mb-8">Please select your role to continue setting up your account.</p>
+
+            <button id="select-servant-btn" class="w-full p-4 mb-4 bg-yellow-500 text-white font-bold rounded-lg hover:bg-yellow-600 transition duration-300 shadow-md">
+                I am a Servant (Sevak)
+            </button>
+
+            <button id="select-authority-btn" class="w-full p-4 mb-8 bg-purple-600 text-white font-bold rounded-lg hover:bg-purple-700 transition duration-300 shadow-md">
+                I am an Authority (Monitor)
+            </button>
+            
+            <button id="back-to-auth-btn" class="w-full text-gray-500 hover:text-gray-700 transition duration-300 text-sm">
+                &larr; Back to Sign In
+            </button>
+        </div>
+
+        <!-- === 3. SIGN UP FORM VIEW (ROLE-SPECIFIC) === -->
+        <div id="signup-form-view" class="max-w-md mx-auto my-10 p-6 bg-white rounded-xl shadow-2xl transition duration-500" style="display: none;">
+            <h2 id="role-title-display" class="text-3xl font-bold mb-6 text-[var(--primary-color)]">Registration Details</h2>
+            <p class="text-sm text-gray-500 mb-4">Account: <span id="current-signup-email" class="font-bold text-gray-700"></span></p>
+
+            <input type="text" id="temple-id-input" placeholder="Enter Temple ID (e.g., MAIN_DELHI_1)" class="w-full p-3 mb-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            
+            <!-- Authority Specific Field (Hidden by default) -->
+            <div id="authority-fields" style="display: none;">
+                <input type="password" id="authority-key-input" placeholder="Authority Secret Key" class="w-full p-3 mb-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500">
+            </div>
+
+            <button id="final-signup-btn" class="w-full p-3 mb-6 bg-[var(--accent-color)] text-white font-bold rounded-lg hover:bg-[#1e7e34] transition duration-300 shadow-md">Complete Registration</button>
+            
+            <button id="back-to-options-btn" class="w-full text-gray-500 hover:text-gray-700 transition duration-300 text-sm">
+                &larr; Back to Role Selection
+            </button>
+        </div>
+
+
+        <!-- 4. SERVANT VIEW -->
+        <div id="servant-view" class="max-w-md mx-auto my-10 p-6 bg-white rounded-xl shadow-2xl" style="display: none;">
+            <!-- Debug element to verify view is loaded -->
+            <div id="debug-servant-view" style="display: none;">Servant view is loaded</div>
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-semibold text-gray-600">Welcome, <span id="servant-name" class="text-[var(--primary-color)]">Servant</span></h2>
+                <a href="calendar.html" class="text-blue-600 hover:text-blue-800 font-semibold">View Calendar</a>
+            </div>
+            
+            <p class="text-sm mb-4 text-gray-400">Temple: <span id="servant-temple-name" class="font-semibold text-gray-600">...</span> (<span id="servant-temple-id">...</span>)</p>
+
+            <p class="text-lg mb-4 text-gray-500">Your current plates served:</p>
+            <h1 id="servant-individual-count" class="text-8xl font-extrabold text-[var(--primary-color)] my-8">0</h1>
+            
+            <!-- Large, highly tappable button for mobile -->
+            <button id="increment-btn" class="w-full h-40 font-bold rounded-2xl transition duration-150 shadow-2xl hover:shadow-3xl transform hover:scale-[1.02] active:scale-[0.98] bg-[var(--accent-color)] text-white text-4xl mt-6">
+                +1 Plate Served
+            </button>
+
+            <button id="full-screen-toggle-btn" class="w-full h-16 font-bold rounded-xl bg-blue-600 text-white text-xl mt-4 hover:bg-blue-700 transition duration-300 shadow-lg">
+                Enter Full Screen Counter Mode
+            </button>
+
+            <!-- <button id="full-screen-toggle-btn" class="w-full h-12 font-bold rounded-lg bg-blue-600 text-white text-lg mt-4 hover:bg-blue-700 transition duration-300">
+                Enter Full Screen Counter Mode
+            </button> -->
+            
+            <hr class="my-8 border-gray-200">
+            
+            <div class="p-4 bg-gray-50 rounded-lg">
+                <h3 class="text-xl font-semibold text-gray-700">Temple Total Count:</h3>
+                <span id="servant-total-count" class="text-5xl font-extrabold text-blue-600">0</span>
+            </div>
+        </div>
+
+        <!-- 5. AUTHORITY VIEW -->
+                <!-- Full Screen Counter Mode -->
+        <div id="full-screen-counter-view" class="fixed inset-0 z-50 bg-white" style="display: none;">
+            <button id="back-to-dashboard-btn" class="fixed top-4 right-4 bg-black bg-opacity-50 text-white px-4 py-2 rounded-lg z-[1001]">
+                Back to Dashboard
+            </button>
+            <div class="counter-grid h-full">
+                <div id="count-one-btn" class="tap-region">
+                    +1
+                    <div class="tap-label">Tap anywhere in this region to add 1</div>
+                </div>
+                <div id="count-two-btn" class="tap-region">
+                    +2
+                    <div class="tap-label">Tap anywhere in this region to add 2</div>
+                </div>
+                <div id="count-five-btn" class="tap-region">
+                    +5
+                    <div class="tap-label">Tap anywhere in this region to add 5</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- === 5. AUTHORITY VIEW === -->
+        <div id="authority-view" class="max-w-3xl mx-auto my-10 p-6 bg-white rounded-xl shadow-2xl" style="display: none;">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold text-[var(--primary-color)]">Authority Dashboard</h2>
+                <a href="calendar.html" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300">View Calendar</a>
+            </div>
+            <h3 class="text-xl font-medium text-gray-600 mb-6">Monitoring: <span id="temple-name" class="text-blue-600 font-bold">...</span> (<span id="authority-temple-id">...</span>)</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <!-- Overall Total Box -->
+                <div class="p-6 bg-yellow-50 border-4 border-yellow-200 rounded-xl shadow-lg">
+                    <h3 class="text-xl font-semibold text-gray-700 mb-2">Overall Temple Total</h3>
+                    <h1 id="authority-total-count" class="text-7xl font-extrabold text-[var(--primary-color)]">0</h1>
+                </div>
+                
+                <!-- Servant List Box -->
+                <div class="p-6 bg-blue-50 border-4 border-blue-200 rounded-xl shadow-lg">
+                    <h3 class="text-xl font-semibold text-gray-700 border-b pb-2 mb-3">Live Servant Counts</h3>
+                    <ul id="servant-list" class="space-y-2 text-left">
+                        <!-- Servant details will be injected here -->
+                        <li class="text-gray-500">Loading servant data...</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Reset Button -->
+            <button id="reset-all-btn" class="w-full md:w-auto p-3 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition duration-300 shadow-xl transform hover:scale-[1.01]">
+                Reset All Temple Counts
+            </button>
+            <p id="reset-msg" class="error-msg mt-3 text-sm"></p>
+        </div>
+    </main>
+
+    <!-- Import Firebase config and main script -->
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="script.js"></script>
+</body>
+</html>
