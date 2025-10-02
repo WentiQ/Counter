@@ -12,12 +12,12 @@ import {
     orderBy,
     doc,
     getDoc
-} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+} from 'firebase/firestore';
 
 import {
     onAuthStateChanged,
     signOut
-} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+} from 'firebase/auth';
 
 // --- DOM Elements ---
 const loadingOverlay = document.getElementById('loading-overlay');

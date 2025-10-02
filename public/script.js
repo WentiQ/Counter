@@ -1,27 +1,6 @@
 // script.js
 
-// --- 1. FIREBASE AUTH AND FIRESTORE IMPORTS (Directly from CDN) ---
-import { 
-    // Auth Functions
-    signInWithPopup,
-    onAuthStateChanged,
-    signOut
-} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-
-import { 
-    // Firestore Functions
-    doc, 
-    getDoc, 
-    onSnapshot, 
-    collection, 
-    writeBatch,
-    runTransaction,
-    query,
-    getDocs
-} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-
-
-// --- 2. LOCAL IMPORTS (Initialized services and constants) ---
+// --- LOCAL IMPORTS (Initialized services and constants) ---
 import { 
     auth, 
     db, 
@@ -90,10 +69,9 @@ async function initializeNewUser(user, inputTempleId, role) {
     const userName = user.displayName || user.email.split('@')[0];
     const uid = user.uid;
 
-    const userDocRef = doc(db, 'users', uid);
-    const countDocRef = doc(db, 'temples', templeId, 'counts', uid);
-    
-    const batch = writeBatch(db);
+    const batch = db.batch();
+    const userDocRef = db.collection('users').doc(uid);
+    const countDocRef = db.collection('temples').doc(templeId).collection('counts').doc(uid);
 
     // 1. Create User Document 
     batch.set(userDocRef, {
@@ -113,9 +91,9 @@ async function initializeNewUser(user, inputTempleId, role) {
     }
 
     // 3. Ensure Temple Document exists
-    const templeDocRef = doc(db, 'temples', templeId);
-    const templeDocSnap = await getDoc(templeDocRef);
-    if (!templeDocSnap.exists()) {
+    const templeDocRef = db.collection('temples').doc(templeId);
+    const templeDocSnap = await templeDocRef.get();
+    if (!templeDocSnap.exists) {
         // Create a default temple name if it doesn't exist
         const tName = (templeId === DEFAULT_TEMPLE_ID) ? DEFAULT_TEMPLE_NAME : `Temple ID: ${templeId}`;
         batch.set(templeDocRef, { name: tName }, { merge: true });
@@ -232,11 +210,11 @@ window.addEventListener('DOMContentLoaded', () => {
 
     /** Sets up real-time listener for the servant's individual count. */
     function listenForServantCount(uid, templeId, userName) {
-        const countRef = doc(db, 'temples', templeId, 'counts', uid);
+        const countRef = db.collection('temples').doc(templeId).collection('counts').doc(uid);
         servantNameDisplay.textContent = userName;
         
-        onSnapshot(countRef, (docSnap) => {
-            if (docSnap.exists()) {
+        countRef.onSnapshot((docSnap) => {
+            if (docSnap.exists) {
                 const count = docSnap.data().current_count || 0;
                 servantIndividualCount.textContent = count;
             } else {
@@ -247,9 +225,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
     /** Sets up real-time listener for ALL counts in a temple (used by both roles). */
     function listenForTempleCounts(templeId) {
-        const countsRef = collection(db, 'temples', templeId, 'counts');
+        const countsRef = db.collection('temples').doc(templeId).collection('counts');
 
-        onSnapshot(countsRef, (snapshot) => {
+        countsRef.onSnapshot((snapshot) => {
             let totalCount = 0;
             let servantHtml = '';
 
@@ -280,11 +258,11 @@ window.addEventListener('DOMContentLoaded', () => {
 
     /** Fetches temple name for the dashboard and populates relevant fields. */
     async function fetchTempleInfo(templeId) {
-        const templeRef = doc(db, 'temples', templeId);
-        const docSnap = await getDoc(templeRef);
+        const templeRef = db.collection('temples').doc(templeId);
+        const docSnap = await templeRef.get();
 
         let tName = 'Unknown Temple';
-        if (docSnap.exists()) {
+        if (docSnap.exists) {
             tName = docSnap.data().name || 'Temple';
         } 
         
@@ -303,15 +281,15 @@ window.addEventListener('DOMContentLoaded', () => {
     async function incrementCount(value) {
         if (!auth.currentUser || currentUserRole !== 'servant') return;
 
-        const countRef = doc(db, 'temples', currentUserTempleId, 'counts', auth.currentUser.uid);
-        const logsRef = collection(db, 'temples', currentUserTempleId, 'logs');
+        const countRef = db.collection('temples').doc(currentUserTempleId).collection('counts').doc(auth.currentUser.uid);
+        const logsRef = db.collection('temples').doc(currentUserTempleId).collection('logs');
         const timestamp = new Date().toISOString();
         const servantName = auth.currentUser.displayName || auth.currentUser.email.split('@')[0];
         
         try {
-            await runTransaction(db, async (transaction) => {
+            await db.runTransaction(async (transaction) => {
                 const countDoc = await transaction.get(countRef);
-                if (!countDoc.exists()) {
+                if (!countDoc.exists) {
                     // Create the doc if somehow missing
                     transaction.set(countRef, { 
                         name: servantName,
@@ -327,7 +305,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
 
                 // Add to logs collection
-                const logDoc = doc(logsRef);
+                const logDoc = logsRef.doc();
                 transaction.set(logDoc, {
                     servantId: auth.currentUser.uid,
                     servantName: servantName,
@@ -348,15 +326,15 @@ window.addEventListener('DOMContentLoaded', () => {
         setLoading(loadingOverlay, true);
         
         try {
-            const result = await signInWithPopup(auth, googleProvider);
+            const result = await auth.signInWithPopup(googleProvider);
             const user = result.user;
             
             // Check if user data already exists in Firestore
-            const userDocRef = doc(db, 'users', user.uid);
-            const userDoc = await getDoc(userDocRef);
+            const userDocRef = db.collection('users').doc(user.uid);
+            const userDoc = await userDocRef.get();
 
-            if (userDoc.exists()) {
-                // Existing user: onAuthStateChanged will handle the final view display
+            if (userDoc.exists) {
+                // Existing user: auth.onAuthStateChanged will handle the final view display
                 console.log("Existing user logged in.");
             } else {
                 // New user: Store credentials and redirect to role selection
@@ -389,9 +367,10 @@ window.addEventListener('DOMContentLoaded', () => {
         const templeId = templeIdInput.value.trim().toUpperCase();
         const roleToAssign = currentAuthState;
 
-        if (!user) {
+        if (!user || !auth.currentUser) {
             authError.textContent = 'Session expired. Please sign in again.';
             console.error("Validation failed: No user session.");
+            showView(authView, signupOptionsView, signupFormView, servantView, authorityView, fullScreenCounterView, logoutBtn, 'auth-view');
             return;
         }
         
@@ -412,14 +391,37 @@ window.addEventListener('DOMContentLoaded', () => {
         
         setLoading(loadingOverlay, true);
         try {
+            // Store the user data so we can use it after initialization
+            const userData = {
+                uid: user.uid,
+                templeId: templeId,
+                role: roleToAssign,
+                userName: user.displayName || user.email.split('@')[0]
+            };
+            
             // Finalize registration by writing user data to Firestore
             await initializeNewUser(user, templeId, roleToAssign); 
-            tempGoogleUser = null; // Clear temp state
             
-            // The onAuthStateChanged listener will automatically pick up the new user doc and redirect to the dashboard
+            // Update the current user state
+            currentUserRole = roleToAssign;
+            currentUserTempleId = templeId;
+            
+            // Set up listeners and redirect to appropriate view
+            await fetchTempleInfo(templeId);
+            listenForTempleCounts(templeId);
+            
+            if (roleToAssign === 'servant') {
+                listenForServantCount(user.uid, templeId, userData.userName);
+                showView(authView, signupOptionsView, signupFormView, servantView, authorityView, fullScreenCounterView, logoutBtn, 'servant-view');
+            } else if (roleToAssign === 'authority') {
+                showView(authView, signupOptionsView, signupFormView, servantView, authorityView, fullScreenCounterView, logoutBtn, 'authority-view');
+            }
+            
+            tempGoogleUser = null; // Clear temp state only after successful redirection
         } catch (error) {
             authError.textContent = `Registration failed: ${error.message}`;
             console.error("Registration Error:", error);
+            // Don't clear tempGoogleUser on error so user can try again
         } finally {
              setLoading(loadingOverlay, false);
         }
@@ -427,7 +429,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
     logoutBtn.addEventListener('click', () => {
-        signOut(auth);
+        auth.signOut();
     });
 
     // --- Action Handlers (Dashboard & Full Screen Counter) ---
@@ -491,9 +493,8 @@ window.addEventListener('DOMContentLoaded', () => {
         resetMsg.textContent = 'Resetting...';
         
         try {
-            const countsRef = collection(db, 'temples', currentUserTempleId, 'counts');
-            const q = query(countsRef);
-            const snapshot = await getDocs(q); 
+            const countsRef = db.collection('temples').doc(currentUserTempleId).collection('counts');
+            const snapshot = await countsRef.get();
 
             if (snapshot.empty) {
                 resetMsg.textContent = 'No counts to reset.';
@@ -501,10 +502,10 @@ window.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            const batch = writeBatch(db);
+            const batch = db.batch();
 
             snapshot.forEach((docSnap) => {
-                const countDocRef = doc(db, 'temples', currentUserTempleId, 'counts', docSnap.id);
+                const countDocRef = db.collection('temples').doc(currentUserTempleId).collection('counts').doc(docSnap.id);
                 batch.update(countDocRef, { 
                     current_count: 0,
                     last_reset_by: auth.currentUser.email,
@@ -525,15 +526,16 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // --- Main Authentication State Listener ---
 
-    onAuthStateChanged(auth, async (user) => {
+    // Set up authentication state change listener
+    auth.onAuthStateChanged(async (user) => {
         setLoading(loadingOverlay, true);
         
         if (user) {
-            const userDocRef = doc(db, 'users', user.uid);
+            const userDocRef = db.collection('users').doc(user.uid);
             try {
-                const userDoc = await getDoc(userDocRef);
+                const userDoc = await userDocRef.get();
                 
-                if (userDoc.exists()) {
+                if (userDoc.exists) {
                     const data = userDoc.data();
                     currentUserRole = data.role;
                     currentUserTempleId = data.temple_id;

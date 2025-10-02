@@ -1,12 +1,9 @@
 // firebase-config.js
+import firebase from 'firebase/compat/app';
+import 'firebase/compat/auth';
+import 'firebase/compat/firestore';
 
-// Import the functions you need from the Firebase SDKs
-import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-import { getAnalytics } from 'firebase/analytics';
-
-// Your web app's Firebase configuration (REPLACE WITH YOUR ACTUAL CONFIG)
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyA-MxIzgGcWfkyVhU6weQ90FdQBYKAwMDM",
   authDomain: "prasadam-counter.firebaseapp.com",
@@ -19,10 +16,12 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const googleProvider = new GoogleAuthProvider();
+firebase.initializeApp(firebaseConfig);
+
+// Get Firebase services
+export const auth = firebase.auth();
+export const db = firebase.firestore();
+export const googleProvider = new firebase.auth.GoogleAuthProvider();
 
 // --- Custom Configuration ---
 export const DEFAULT_TEMPLE_ID = 'MAIN_BRANCH';
