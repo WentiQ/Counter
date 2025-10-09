@@ -32,4 +32,4 @@ export const DEFAULT_TEMPLE_NAME = 'Main Temple Branch (Default)';
  * CHANGE THIS TO A UNIQUE, COMPLEX STRING IMMEDIATELY. 
  * Any user who knows this key can register as an Authority.
  */
-export const AUTHORITY_SECRET_KEY = 'PRASAD_ADMIN_2024_CHANGE_ME_NOW'; 
+export const AUTHORITY_SECRET_KEY = 'admin'; 
