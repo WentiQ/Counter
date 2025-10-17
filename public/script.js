@@ -210,14 +210,42 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // --- UI/Data Logic ---
 
+    /** Checks if the count needs to be reset based on last update time */
+    function shouldResetCount(lastUpdated) {
+        if (!lastUpdated) return true;
+        
+        const lastDate = new Date(lastUpdated);
+        const now = new Date();
+        
+        // Return true if the dates are different (past midnight)
+        return lastDate.toLocaleDateString() !== now.toLocaleDateString();
+    }
+
     /** Sets up real-time listener for the servant's individual count. */
     function listenForServantCount(uid, templeId, userName) {
         const countRef = db.collection('temples').doc(templeId).collection('counts').doc(uid);
         servantNameDisplay.textContent = userName;
         
-        countRef.onSnapshot((docSnap) => {
+        countRef.onSnapshot(async (docSnap) => {
             if (docSnap.exists) {
-                const count = docSnap.data().current_count || 0;
+                const data = docSnap.data();
+                const count = data.current_count || 0;
+                const lastUpdated = data.last_updated;
+
+                // Check if we need to reset the count (new day)
+                if (shouldResetCount(lastUpdated)) {
+                    try {
+                        await countRef.update({
+                            current_count: 0,
+                            last_updated: new Date().toISOString()
+                        });
+                        console.log('Daily count reset performed');
+                        return; // The snapshot listener will fire again with the new count
+                    } catch (error) {
+                        console.error('Error resetting daily count:', error);
+                    }
+                }
+
                 servantIndividualCount.textContent = count;
                 if (topIndividualCount) topIndividualCount.textContent = count;
             } else {
@@ -231,13 +259,17 @@ window.addEventListener('DOMContentLoaded', () => {
     function listenForTempleCounts(templeId) {
         const countsRef = db.collection('temples').doc(templeId).collection('counts');
 
-        countsRef.onSnapshot((snapshot) => {
+        countsRef.onSnapshot(async (snapshot) => {
             let totalCount = 0;
             let servantHtml = '';
+            let resetNeeded = false;
 
             snapshot.forEach((doc) => {
                 const data = doc.data();
                 const count = data.current_count || 0;
+                if (shouldResetCount(data.last_updated)) {
+                    resetNeeded = true;
+                }
                 totalCount += count;
                 
                 // For Authority view
@@ -248,6 +280,24 @@ window.addEventListener('DOMContentLoaded', () => {
                     </li>
                 `;
             });
+
+            // If any count needs resetting (new day), reset all counts
+            if (resetNeeded) {
+                try {
+                    const batch = db.batch();
+                    snapshot.forEach((doc) => {
+                        batch.update(doc.ref, {
+                            current_count: 0,
+                            last_updated: new Date().toISOString()
+                        });
+                    });
+                    await batch.commit();
+                    console.log('Daily reset performed for all counts');
+                    return; // The snapshot listener will fire again with new counts
+                } catch (error) {
+                    console.error('Error performing daily reset:', error);
+                }
+            }
 
             // Update the total count display for both roles
             servantTotalCount.textContent = totalCount;
@@ -440,6 +490,29 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Dashboard +1 button (standard counter)
     incrementBtn.addEventListener('click', () => incrementCount(1));
+
+    // Reset individual count button
+    const resetCountBtn = document.getElementById('reset-count-btn');
+    if (resetCountBtn) {
+        resetCountBtn.addEventListener('click', async () => {
+            if (!auth.currentUser || currentUserRole !== 'servant') return;
+
+            // Confirm reset
+            const confirmation = window.prompt("Type 'RESET' to confirm resetting your count to zero:");
+            if (confirmation !== 'RESET') return;
+
+            const countRef = db.collection('temples').doc(currentUserTempleId).collection('counts').doc(auth.currentUser.uid);
+            try {
+                await countRef.update({
+                    current_count: 0,
+                    last_updated: new Date().toISOString()
+                });
+                console.log('Individual count reset successfully');
+            } catch (error) {
+                console.error('Error resetting individual count:', error);
+            }
+        });
+    }
     
     // Toggle Full Screen View - Using both onclick and addEventListener for redundancy
     function handleFullScreenToggle() {
