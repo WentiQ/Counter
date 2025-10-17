@@ -24,26 +24,7 @@
     <p id="auth-error" class="error-msg text-red-500 mt-4 text-center"></p>
 
     <main class="p-4">
-        <!-- Full Screen Counter Mode -->
-        <div id="full-screen-counter-view" class="fixed inset-0 z-[100] bg-white" style="display: none;">
-            <button id="back-to-dashboard-btn" class="fixed top-4 right-4 bg-black bg-opacity-50 text-white px-4 py-2 rounded-lg z-[101] hover:bg-opacity-70 transition-all">
-                Back to Dashboard
-            </button>
-            <div class="counter-grid h-full">
-                <div id="count-one-btn" class="tap-region bg-green-500 hover:bg-green-600 active:bg-green-700 transition-colors">
-                    <span class="text-6xl font-bold mb-4">+1</span>
-                    <div class="tap-label text-xl opacity-75">Tap anywhere in this region to add 1</div>
-                </div>
-                <div id="count-two-btn" class="tap-region bg-yellow-500 hover:bg-yellow-600 active:bg-yellow-700 transition-colors">
-                    <span class="text-6xl font-bold mb-4">+2</span>
-                    <div class="tap-label text-xl opacity-75">Tap anywhere in this region to add 2</div>
-                </div>
-                <div id="count-five-btn" class="tap-region bg-blue-500 hover:bg-blue-600 active:bg-blue-700 transition-colors">
-                    <span class="text-6xl font-bold mb-4">+5</span>
-                    <div class="tap-label text-xl opacity-75">Tap anywhere in this region to add 5</div>
-                </div>
-            </div>
-        </div>
+        <!-- (full-screen-counter-view moved lower in the file) -->
         
         <!-- === 1. SIGN IN / SIGN UP WITH GOOGLE VIEW === -->
         <div id="auth-view" class="max-w-md mx-auto my-10 p-6 bg-white rounded-xl shadow-2xl transition duration-500">
@@ -135,20 +116,18 @@
             <button id="back-to-dashboard-btn" class="fixed top-4 right-4 bg-black bg-opacity-50 text-white px-4 py-2 rounded-lg z-[1001]">
                 Back to Dashboard
             </button>
-            <div class="counter-grid h-full">
-                <div id="count-one-btn" class="tap-region">
-                    +1
-                    <div class="tap-label">Tap anywhere in this region to add 1</div>
+                <!-- previous placeholder grid removed to avoid duplicate IDs -->
+                <div class="h-1/2 flex flex-col items-center justify-start pt-8 top-half">
+                    <div id="top-individual-count" class="text-7xl font-extrabold text-[var(--primary-color)]">0</div>
+                    <div class="mt-6">
+                        <button id="decrement-btn" aria-label="Decrement" class="w-20 h-20 rounded-full bg-red-500 text-white text-3xl flex items-center justify-center shadow-lg">-1</button>
+                    </div>
                 </div>
-                <div id="count-two-btn" class="tap-region">
-                    +2
-                    <div class="tap-label">Tap anywhere in this region to add 2</div>
+                <div class="h-1/2 relative bottom-half">
+                    <button id="count-five-btn" class="absolute left-8 top-6 w-48 h-48 rounded-full bg-blue-600 text-white text-4xl font-bold shadow-2xl flex items-center justify-center">+5</button>
+                    <button id="count-two-btn" class="absolute right-8 top-6 w-40 h-40 rounded-full bg-yellow-500 text-white text-3xl font-bold shadow-2xl flex items-center justify-center">+2</button>
+                    <button id="count-one-btn" class="absolute left-1/2 transform -translate-x-1/2 bottom-8 w-56 h-56 rounded-full bg-green-500 text-white text-5xl font-extrabold shadow-2xl flex items-center justify-center">+1</button>
                 </div>
-                <div id="count-five-btn" class="tap-region">
-                    +5
-                    <div class="tap-label">Tap anywhere in this region to add 5</div>
-                </div>
-            </div>
         </div>
 
         <!-- === 5. AUTHORITY VIEW === -->

@@ -172,6 +172,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const countOneBtn = document.getElementById('count-one-btn');
     const countTwoBtn = document.getElementById('count-two-btn');
     const countFiveBtn = document.getElementById('count-five-btn');
+    const decrementBtn = document.getElementById('decrement-btn');
+    const topIndividualCount = document.getElementById('top-individual-count');
     const backToDashboardBtn = document.getElementById('back-to-dashboard-btn');
 
     // --- View Navigation Logic ---
@@ -217,8 +219,10 @@ window.addEventListener('DOMContentLoaded', () => {
             if (docSnap.exists) {
                 const count = docSnap.data().current_count || 0;
                 servantIndividualCount.textContent = count;
+                if (topIndividualCount) topIndividualCount.textContent = count;
             } else {
                 servantIndividualCount.textContent = 0;
+                if (topIndividualCount) topIndividualCount.textContent = 0;
             }
         });
     }
@@ -469,10 +473,37 @@ window.addEventListener('DOMContentLoaded', () => {
         console.error('Full screen toggle button not found when setting up handlers');
     }
 
+    // Vibration helper
+    function vibrate(pattern) {
+        if (navigator.vibrate) navigator.vibrate(pattern);
+    }
+
     // Full Screen Counter Buttons
-    countOneBtn.addEventListener('click', () => incrementCount(1));
-    countTwoBtn.addEventListener('click', () => incrementCount(2));
-    countFiveBtn.addEventListener('click', () => incrementCount(5));
+    countOneBtn.addEventListener('click', async () => {
+        await incrementCount(1);
+        // single short vibration
+        vibrate(50);
+    });
+
+    countTwoBtn.addEventListener('click', async () => {
+        await incrementCount(2);
+        // two short vibrations
+        vibrate([40, 60, 40]);
+    });
+
+    countFiveBtn.addEventListener('click', async () => {
+        await incrementCount(5);
+        // long vibration
+        vibrate(300);
+    });
+
+    // Decrement handler (-1)
+    decrementBtn.addEventListener('click', async () => {
+        // Decrement the count by 1 (record as negative log)
+        await incrementCount(-1);
+        // medium-long vibration (shorter than +5)
+        vibrate(180);
+    });
 
     // Exit Full Screen View
     backToDashboardBtn.addEventListener('click', goToServantDashboard);

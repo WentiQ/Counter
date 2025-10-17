@@ -7,7 +7,8 @@ import 'firebase/compat/firestore';
 const firebaseConfig = {
   apiKey: "AIzaSyA-MxIzgGcWfkyVhU6weQ90FdQBYKAwMDM",
   authDomain: "prasadam-counter.firebaseapp.com",
-  databaseURL: "https://prasadam-counter-default-rtdb.firebaseio.com",
+  databaseURL: "https://prasadam-counter-default-rtdb.asia-southeast1.firebasedatabase.app",
+  // databaseURL: "https://prasadam-counter-default-rtdb.firebaseio.com",
   projectId: "prasadam-counter",
   storageBucket: "prasadam-counter.appspot.com",
   messagingSenderId: "770901647160",
