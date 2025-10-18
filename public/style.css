@@ -301,66 +301,119 @@ header {
     align-items: center;
     justify-content: center;
     font-weight: 800;
+    position: absolute;
     box-shadow: 0 14px 30px rgba(0,0,0,0.18);
+    /* Ensure text stays proportional */
+    font-size: min(4vh, 24px);
 }
 
-/* Small increment buttons (+5, +2) — sit near top-left/top-right of bottom half */
+/* Small increment buttons (+5, +2) — carefully positioned to avoid overlap */
 #count-five-btn {
-    position: absolute;
-    left: 3%;
-    top: 4%;
-    width: 18vh; /* larger radius */
-    height: 18vh;
-    min-width: 110px;
-    min-height: 110px;
+    left: min(4vw, 20px);
+    top: min(4vh, 20px);
+    width: min(22vh, 30vw);
+    height: min(22vh, 30vw);
+    /* Minimum size to remain tappable */
+    min-width: 85px;
+    min-height: 85px;
 }
 
 #count-two-btn {
-    position: absolute;
-    right: 3%;
-    top: 4%;
-    width: 16.5vh; /* larger radius */
-    height: 16.5vh;
-    min-width: 100px;
-    min-height: 100px;
+    right: min(4vw, 20px);
+    top: min(4vh, 20px);
+    width: min(20vh, 28vw);
+    height: min(20vh, 28vw);
+    min-width: 80px;
+    min-height: 80px;
 }
 
-/* Big +1 button — should be dominant and occupy roughly half the screen height */
+/* Big +1 button — scaled based on available space */
 #count-one-btn {
-    position: absolute;
     left: 50%;
     transform: translateX(-50%);
-    bottom: 2.5%;
-    width: calc(58vh); /* large circular button ~58% of viewport height */
-    height: calc(58vh);
-    max-width: 96vw;
-    max-height: 96vw;
-    /* ensure it remains circular on very small widths */
+    bottom: min(4vh, 20px);
+    /* Size relative to viewport height but capped by width */
+    width: min(55vh, 85vw);
+    height: min(55vh, 85vw);
+    /* Minimum size for easy tapping */
+    min-width: 160px;
+    min-height: 160px;
+    font-size: min(8vh, 48px);
 }
 
-/* Decrement button in the top area — keep it out of the way of the count */
+/* Decrement button — positioned in top area */
 #decrement-btn {
     position: absolute;
-    right: 6%;
-    top: 22%; /* push down so it doesn't overlap the top count */
-    width: 72px;
-    height: 72px;
-    font-size: 20px;
+    right: min(5vw, 24px);
+    /* Push down from very top to avoid count */
+    top: max(20vh, 100px);
+    width: min(12vh, 15vw);
+    height: min(12vh, 15vw);
+    min-width: 60px;
+    min-height: 60px;
+    font-size: min(2.5vh, 20px);
 }
 
 /* Responsive adjustments for narrow screens */
 @media (max-width: 640px) {
-    #count-five-btn { width: 13vh; height: 13vh; left: 4%; top: 5%; }
-    #count-two-btn { width: 12vh; height: 12vh; right: 4%; top: 5%; }
-    #count-one-btn { width: calc(50vh); height: calc(50vh); bottom: 3%; }
-    #decrement-btn { top: 24%; width: 64px; height: 64px; }
+    #count-five-btn {
+        width: min(20vh, 28vw);
+        height: min(20vh, 28vw);
+    }
+    #count-two-btn {
+        width: min(18vh, 26vw);
+        height: min(18vh, 26vw);
+    }
+    /* Adjust +1 button on narrow screens */
+    #count-one-btn {
+        width: min(50vh, 82vw);
+        height: min(50vh, 82vw);
+    }
 }
 
 @media (max-width: 420px) {
-    /* On very small screens, reduce big button slightly so it doesn't overflow */
-    #count-one-btn { width: calc(46vh); height: calc(46vh); }
-    #count-five-btn, #count-two-btn { width: 11vh; height: 11vh; }
+    /* Further adjustments for very small screens */
+    #count-five-btn, #count-two-btn {
+        width: min(16vh, 24vw);
+        height: min(16vh, 24vw);
+    }
+    #count-one-btn {
+        width: min(46vh, 80vw);
+        height: min(46vh, 80vw);
+    }
+    .top-half {
+        height: 32%;
+    }
+    .bottom-half {
+        height: 68%;
+    }
 }
+
+/* Landscape orientation adjustments */
+@media (orientation: landscape) and (max-height: 500px) {
+    .top-half {
+        height: 30%;
+        padding-top: min(3vh, 1rem);
+    }
+    .bottom-half {
+        height: 70%;
+    }
+    #count-five-btn, #count-two-btn {
+        width: min(14vh, 20vw);
+        height: min(14vh, 20vw);
+    }
+    #count-one-btn {
+        width: min(40vh, 70vw);
+        height: min(40vh, 70vw);
+        bottom: min(2vh, 10px);
+    }
+    #decrement-btn {
+        top: 15vh;
+        width: min(10vh, 12vw);
+        height: min(10vh, 12vw);
+    }
+}
+
 
 .counter-grid {
     display: grid;

@@ -495,19 +495,104 @@ window.addEventListener('DOMContentLoaded', () => {
     const resetCountBtn = document.getElementById('reset-count-btn');
     if (resetCountBtn) {
         resetCountBtn.addEventListener('click', async () => {
-            if (!auth.currentUser || currentUserRole !== 'servant') return;
+            console.log("Reset button clicked"); // Debug log
+            if (!auth.currentUser || currentUserRole !== 'servant') {
+                console.log("Auth check failed:", { currentUser: !!auth.currentUser, role: currentUserRole }); // Debug log
+                return;
+            }
 
             // Confirm reset
-            const confirmation = window.prompt("Type 'RESET' to confirm resetting your count to zero:");
-            if (confirmation !== 'RESET') return;
+            const confirmation = window.prompt("Type 'RESET' (in capital letters) to confirm resetting your count to zero:");
+            console.log("Reset confirmation input:", confirmation); // Debug log
+            if (confirmation !== 'RESET') {
+                alert('Reset cancelled. Note: You must type RESET in capital letters.');
+                return;
+            }
 
-            const countRef = db.collection('temples').doc(currentUserTempleId).collection('counts').doc(auth.currentUser.uid);
             try {
-                await countRef.update({
-                    current_count: 0,
-                    last_updated: new Date().toISOString()
+                console.log("Starting reset process..."); // Debug log
+                const countRef = db.collection('temples').doc(currentUserTempleId).collection('counts').doc(auth.currentUser.uid);
+                const logsRef = db.collection('temples').doc(currentUserTempleId).collection('logs');
+                const servantName = auth.currentUser.displayName || auth.currentUser.email.split('@')[0];
+                const now = new Date();
+                const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+                const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+                const timestamp = now.toISOString();
+                
+                await db.runTransaction(async (transaction) => {
+                    // Get the current count document
+                    const countDoc = await transaction.get(countRef);
+                    if (!countDoc.exists) {
+                        throw new Error("Count document not found");
+                    }
+                    
+                    const currentCount = countDoc.data().current_count || 0;
+                    console.log("Current count before reset:", currentCount); // Debug log
+                    
+                    if (currentCount > 0) {
+                        // Add a reset log entry
+                        const resetLogDoc = logsRef.doc();
+                        transaction.set(resetLogDoc, {
+                            servantId: auth.currentUser.uid,
+                            servantName: servantName,
+                            count: -currentCount, // Negative value to cancel out the current count
+                            timestamp: timestamp,
+                            isReset: true,
+                            previousCount: currentCount
+                        });
+                    }
+                    
+                    // Reset the count to zero
+                    transaction.update(countRef, {
+                        current_count: 0,
+                        last_updated: timestamp,
+                        last_reset: timestamp
+                    });
                 });
-                console.log('Individual count reset successfully');
+                
+                console.log("Reset completed successfully");
+                alert("Your count has been reset to zero.");
+            } catch (error) {
+                console.error("Error during reset:", error);
+                alert("There was an error resetting your count. Please try again.");
+            }
+            
+            try {
+                await db.runTransaction(async (transaction) => {
+                    // First, get today's logs for this servant to calculate total
+                    const todayLogsQuery = await transaction.get(
+                        logsRef
+                            .where('servantId', '==', auth.currentUser.uid)
+                            .where('timestamp', '>=', startOfDay.toISOString())
+                            .where('timestamp', '<=', endOfDay.toISOString())
+                    );
+                    
+                    let todayTotal = 0;
+                    todayLogsQuery.forEach(doc => {
+                        todayTotal += doc.data().count;
+                    });
+
+                    if (todayTotal !== 0) {
+                        // Add a reset marker log
+                        const resetLogDoc = logsRef.doc();
+                        transaction.set(resetLogDoc, {
+                            servantId: auth.currentUser.uid,
+                            servantName: servantName,
+                            count: -todayTotal, // Cancel out today's total
+                            timestamp: timestamp,
+                            isReset: true, // Mark this as a reset entry
+                            resetsDate: startOfDay.toISOString() // Store which date this resets
+                        });
+                    }
+                    
+                    // Reset the current count
+                    transaction.update(countRef, {
+                        current_count: 0,
+                        last_updated: timestamp,
+                        last_reset: timestamp
+                    });
+                });
+                console.log('Individual count reset successfully with calendar log update');
             } catch (error) {
                 console.error('Error resetting individual count:', error);
             }
@@ -551,31 +636,26 @@ window.addEventListener('DOMContentLoaded', () => {
         if (navigator.vibrate) navigator.vibrate(pattern);
     }
 
-    // Full Screen Counter Buttons
-    countOneBtn.addEventListener('click', async () => {
-        await incrementCount(1);
-        // single short vibration
-        vibrate(50);
+    // Full Screen Counter Buttons with immediate vibration
+    countOneBtn.addEventListener('click', () => {
+        vibrate(50); // immediate feedback
+        incrementCount(1).catch(err => console.error('Failed to increment:', err));
     });
 
-    countTwoBtn.addEventListener('click', async () => {
-        await incrementCount(2);
-        // two short vibrations
-        vibrate([40, 60, 40]);
+    countTwoBtn.addEventListener('click', () => {
+        vibrate([40, 60, 40]); // immediate feedback
+        incrementCount(2).catch(err => console.error('Failed to increment:', err));
     });
 
-    countFiveBtn.addEventListener('click', async () => {
-        await incrementCount(5);
-        // long vibration
-        vibrate(300);
+    countFiveBtn.addEventListener('click', () => {
+        vibrate(300); // immediate feedback
+        incrementCount(5).catch(err => console.error('Failed to increment:', err));
     });
 
     // Decrement handler (-1)
-    decrementBtn.addEventListener('click', async () => {
-        // Decrement the count by 1 (record as negative log)
-        await incrementCount(-1);
-        // medium-long vibration (shorter than +5)
-        vibrate(180);
+    decrementBtn.addEventListener('click', () => {
+        vibrate(180); // immediate feedback
+        incrementCount(-1).catch(err => console.error('Failed to increment:', err));
     });
 
     // Exit Full Screen View
@@ -598,6 +678,7 @@ window.addEventListener('DOMContentLoaded', () => {
         
         try {
             const countsRef = db.collection('temples').doc(currentUserTempleId).collection('counts');
+            const logsRef = db.collection('temples').doc(currentUserTempleId).collection('logs');
             const snapshot = await countsRef.get();
 
             if (snapshot.empty) {
@@ -607,15 +688,39 @@ window.addEventListener('DOMContentLoaded', () => {
             }
 
             const batch = db.batch();
+            const now = new Date();
+            const timestamp = now.toISOString();
+            const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
 
-            snapshot.forEach((docSnap) => {
-                const countDocRef = db.collection('temples').doc(currentUserTempleId).collection('counts').doc(docSnap.id);
+            // Process each servant's count
+            for (const docSnap of snapshot.docs) {
+                const servantData = docSnap.data();
+                const currentCount = servantData.current_count || 0;
+                
+                if (currentCount > 0) {
+                    // Create a reset log entry for this servant
+                    const resetLogRef = logsRef.doc();
+                    batch.set(resetLogRef, {
+                        servantId: docSnap.id,
+                        servantName: servantData.name || 'Unknown Servant',
+                        count: -currentCount, // Negative value to cancel out current count
+                        timestamp: timestamp,
+                        isReset: true,
+                        resetsDate: startOfDay.toISOString(),
+                        resetBy: auth.currentUser.email,
+                        previousCount: currentCount
+                    });
+                }
+
+                // Reset the servant's count
+                const countDocRef = countsRef.doc(docSnap.id);
                 batch.update(countDocRef, { 
                     current_count: 0,
                     last_reset_by: auth.currentUser.email,
-                    last_updated: new Date().toISOString()
+                    last_reset: timestamp,
+                    last_updated: timestamp
                 });
-            });
+            }
 
             await batch.commit();
             resetMsg.textContent = 'All counts successfully reset to 0.';

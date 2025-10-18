@@ -119,16 +119,57 @@ async function fetchDailyTotals(year, month) {
         const q = query(
             logsRef,
             where('timestamp', '>=', startDate.toISOString()),
-            where('timestamp', '<=', endDate.toISOString())
+            where('timestamp', '<=', endDate.toISOString()),
+            orderBy('timestamp', 'asc')
         );
         
         const snapshot = await getDocs(q);
         const dailyTotals = {};
+        const resetsByDate = new Map(); // Track resets by date and latest reset time
         
+        // First pass: identify all resets (both authority and individual)
         snapshot.forEach(doc => {
             const data = doc.data();
             const date = data.timestamp.split('T')[0];
-            dailyTotals[date] = (dailyTotals[date] || 0) + data.count;
+            
+            if (data.isReset) {
+                // For authority resets (resets by email present) or individual resets
+                if (!resetsByDate.has(date) || data.timestamp > resetsByDate.get(date).timestamp) {
+                    resetsByDate.set(date, {
+                        timestamp: data.timestamp,
+                        isAuthorityReset: !!data.resetBy // Check if it's an authority reset
+                    });
+                }
+            }
+        });
+        
+        // Second pass: calculate totals, respecting resets
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const date = data.timestamp.split('T')[0];
+            
+            const resetInfo = resetsByDate.get(date);
+            if (resetInfo) {
+                // If there was a reset on this date
+                if (resetInfo.isAuthorityReset) {
+                    // For authority resets, only count entries after the reset time
+                    if (data.timestamp > resetInfo.timestamp && !data.isReset) {
+                        dailyTotals[date] = (dailyTotals[date] || 0) + data.count;
+                    }
+                } else {
+                    // For individual resets, handle each servant separately
+                    if (!data.isReset) {
+                        if (data.timestamp > resetInfo.timestamp) {
+                            dailyTotals[date] = (dailyTotals[date] || 0) + data.count;
+                        }
+                    }
+                }
+            } else {
+                // No resets on this date, add all non-reset entries
+                if (!data.isReset) {
+                    dailyTotals[date] = (dailyTotals[date] || 0) + data.count;
+                }
+            }
         });
         
         // Update count displays
@@ -168,17 +209,85 @@ async function showDailyLogs(date) {
         
         const snapshot = await getDocs(q);
         let dailyLogs = [];
+        let lastAuthorityReset = null;
+        let resetsByServant = new Map(); // Track individual resets by servantId
         
+        // First, process resets
         snapshot.forEach(doc => {
-            dailyLogs.push(doc.data());
+            const data = doc.data();
+            if (data.isReset) {
+                if (data.resetBy) {
+                    // This is an authority reset
+                    if (!lastAuthorityReset || data.timestamp > lastAuthorityReset.timestamp) {
+                        lastAuthorityReset = {
+                            timestamp: data.timestamp,
+                            resetBy: data.resetBy
+                        };
+                    }
+                } else {
+                    // Individual servant reset
+                    if (!resetsByServant.has(data.servantId) || 
+                        data.timestamp > resetsByServant.get(data.servantId)) {
+                        resetsByServant.set(data.servantId, data.timestamp);
+                    }
+                }
+            }
+        });
+        
+        // Then process all logs
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            
+            // Skip reset entries themselves from display
+            if (data.isReset) {
+                dailyLogs.push({
+                    ...data,
+                    isResetEntry: true // Mark for special display
+                });
+                return;
+            }
+            
+            // Check against authority reset first
+            if (lastAuthorityReset && data.timestamp < lastAuthorityReset.timestamp) {
+                return; // Skip entries before authority reset
+            }
+            
+            // Then check against individual resets
+            const servantResetTime = resetsByServant.get(data.servantId);
+            if (servantResetTime && data.timestamp < servantResetTime) {
+                return; // Skip entries before servant's individual reset
+            }
+            
+            dailyLogs.push(data);
         });
 
+        // Calculate total count only from valid entries after the last reset
+        let latestResetTime = null;
+        
+        // Find the latest reset time (whether authority or individual)
+        dailyLogs.forEach(log => {
+            if (log.isResetEntry) {
+                const resetTime = log.timestamp;
+                if (!latestResetTime || resetTime > latestResetTime) {
+                    latestResetTime = resetTime;
+                }
+            }
+        });
+        
+        // Calculate total only from entries after the latest reset
+        const totalCount = dailyLogs.reduce((sum, log) => {
+            // Only include non-reset entries that came after the latest reset
+            if (!log.isResetEntry && (!latestResetTime || log.timestamp > latestResetTime)) {
+                return sum + log.count;
+            }
+            return sum;
+        }, 0);
+
         // Add total row at the top
-        const totalCount = dailyLogs.reduce((sum, log) => sum + log.count, 0);
         const totalRow = document.createElement('tr');
         totalRow.className = 'bg-blue-50 font-bold';
         totalRow.innerHTML = `
-            <td class="px-6 py-4" colspan="2">TOTAL</td>
+            <td class="px-6 py-4" colspan="2">TOTAL (After Reset)</td>
             <td class="px-6 py-4">${totalCount}</td>
         `;
         logsTableBody.appendChild(totalRow);
@@ -191,17 +300,51 @@ async function showDailyLogs(date) {
         // Add individual logs
         dailyLogs.forEach(log => {
             const row = document.createElement('tr');
-            row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    ${formatTime(log.timestamp)}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ${log.servantName}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ${log.count}
-                </td>
-            `;
+            
+            if (log.isResetEntry) {
+                // Special styling for reset entries
+                row.className = 'bg-red-50';
+                if (log.resetBy) {
+                    // Authority reset
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600" colspan="3">
+                            <div class="flex items-center justify-between">
+                                <span>
+                                    <span class="font-bold">Authority Reset</span> by ${log.resetBy} at ${formatTime(log.timestamp)}
+                                    ${log.previousCount ? `<br><span class="text-gray-600">(Count before reset: ${log.previousCount})</span>` : ''}
+                                </span>
+                                <span class="bg-red-100 px-2 py-1 rounded text-red-800">RESET</span>
+                            </div>
+                        </td>
+                    `;
+                } else {
+                    // Individual reset
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600" colspan="3">
+                            <div class="flex items-center justify-between">
+                                <span>
+                                    <span class="font-semibold">${log.servantName}</span> reset their count at ${formatTime(log.timestamp)}
+                                    ${log.previousCount ? `<br><span class="text-gray-600">(Count before reset: ${log.previousCount})</span>` : ''}
+                                </span>
+                                <span class="bg-red-100 px-2 py-1 rounded text-red-800">RESET</span>
+                            </div>
+                        </td>
+                    `;
+                }
+            } else {
+                // Regular log entry
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${formatTime(log.timestamp)}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        ${log.servantName}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        ${log.count}
+                    </td>
+                `;
+            }
             logsTableBody.appendChild(row);
         });
         
